@@ -54,6 +54,7 @@ func Provider() terraform.ResourceProvider {
 			"azurerm_route_table":            resourceArmRouteTable(),
 			"azurerm_route":                  resourceArmRoute(),
 			"azurerm_cdn_profile":            resourceArmCdnProfile(),
+			"azurerm_storage_account":        resourceArmStorageAccount(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -98,7 +99,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 func registerAzureResourceProvidersWithSubscription(config *Config, client *ArmClient) error {
 	providerClient := client.providers
 
-	providers := []string{"Microsoft.Network", "Microsoft.Compute", "Microsoft.Cdn"}
+	providers := []string{"Microsoft.Network", "Microsoft.Compute", "Microsoft.Cdn", "Microsoft.Storage"}
 
 	for _, v := range providers {
 		res, err := providerClient.Register(v)
