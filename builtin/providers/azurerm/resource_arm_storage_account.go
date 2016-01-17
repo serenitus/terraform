@@ -147,7 +147,7 @@ func resourceArmStorageAccountCreate(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return fmt.Errorf("Error creating Azure Storage Account '%s': %s", storageAccountName, err)
 	}
-	_, err = client.Client.PollAsNeeded(accResp.Response.Response, 200)
+	_, err = pollIndefinitelyAsNeeded(client.Client, accResp.Response.Response, http.StatusOK)
 	if err != nil {
 		return fmt.Errorf("Error creating Azure Storage Account %q: %s", storageAccountName, err)
 	}
