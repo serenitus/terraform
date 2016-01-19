@@ -303,7 +303,7 @@ func resourceArmStorageAccountRead(d *schema.ResourceData, meta interface{}) err
 		d.Set("primary_file_endpoint", resp.Properties.PrimaryEndpoints.File)
 	}
 
-	if resp.Properties.SecondaryLocation != nil {
+	if resp.Properties.SecondaryEndpoints != nil {
 		if resp.Properties.SecondaryEndpoints.Blob != nil {
 			d.Set("secondary_blob_endpoint", resp.Properties.SecondaryEndpoints.Blob)
 		} else {
