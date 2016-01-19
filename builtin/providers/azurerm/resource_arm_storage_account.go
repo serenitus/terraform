@@ -169,6 +169,105 @@ func resourceArmStorageAccountCreate(d *schema.ResourceData, meta interface{}) e
 // and idempotent operation for CreateOrUpdate. In particular updating all of the parameters
 // available requires a call to Update per parameter...
 func resourceArmStorageAccountUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*ArmClient).storageServiceClient
+	id, err := parseAzureResourceID(d.Id())
+	if err != nil {
+		return err
+	}
+	storageAccountName := id.Path["storageAccounts"]
+	resourceGroupName := id.ResourceGroup
+
+	d.Partial(true)
+
+	if d.HasChange("account_type") {
+		accountType := d.Get("account_type").(string)
+
+		opts := storage.AccountUpdateParameters{
+			Properties: &storage.AccountPropertiesUpdateParameters{
+				AccountType: storage.AccountType(accountType),
+			},
+		}
+		accResp, err := client.Update(resourceGroupName, storageAccountName, opts)
+		if err != nil {
+			return fmt.Errorf("Error updating Azure Storage Account type %q: %s", storageAccountName, err)
+		}
+		_, err = pollIndefinitelyAsNeeded(client.Client, accResp.Response.Response, http.StatusOK)
+		if err != nil {
+			return fmt.Errorf("Error updating Azure Storage Account type %q: %s", storageAccountName, err)
+		}
+
+		d.SetPartial("account_type")
+	}
+
+	if d.HasChange("custom_domain") {
+		customDomains := d.Get("custom_domain").(*schema.Set).List()
+
+		var opts storage.AccountUpdateParameters
+		if len(customDomains) > 1 {
+			return fmt.Errorf("only one custom_domain per azurerm_storage_account is supported")
+		} else if len(customDomains) == 1 {
+			customDomain := customDomains[0].(map[string]interface{})
+
+			var customDomainName *string
+			var customDomainUseSubdomain *bool
+
+			if v, ok := customDomain["name"].(string); ok {
+				customDomainName = &v
+			}
+			if v, ok := customDomain["use_subdomain"].(bool); ok {
+				customDomainUseSubdomain = &v
+			}
+
+			opts = storage.AccountUpdateParameters{
+				Properties: &storage.AccountPropertiesUpdateParameters{
+					CustomDomain: &storage.CustomDomain{
+						Name:         customDomainName,
+						UseSubDomain: customDomainUseSubdomain,
+					},
+				},
+			}
+		} else if len(customDomains) == 0 {
+			empty := ""
+			opts = storage.AccountUpdateParameters{
+				Properties: &storage.AccountPropertiesUpdateParameters{
+					CustomDomain: &storage.CustomDomain{
+						Name: &empty,
+					},
+				},
+			}
+		}
+
+		accResp, err := client.Update(resourceGroupName, storageAccountName, opts)
+		if err != nil {
+			return fmt.Errorf("Error updating Azure Storage Account custom domain %q: %s", storageAccountName, err)
+		}
+		_, err = pollIndefinitelyAsNeeded(client.Client, accResp.Response.Response, http.StatusOK)
+		if err != nil {
+			return fmt.Errorf("Error updating Azure Storage Account custom domain %q: %s", storageAccountName, err)
+		}
+
+		d.SetPartial("custom_domain")
+	}
+
+	if d.HasChange("tags") {
+		tags := d.Get("tags").(map[string]interface{})
+
+		opts := storage.AccountUpdateParameters{
+			Tags: expandTags(tags),
+		}
+		accResp, err := client.Update(resourceGroupName, storageAccountName, opts)
+		if err != nil {
+			return fmt.Errorf("Error updating Azure Storage Account tags %q: %s", storageAccountName, err)
+		}
+		_, err = pollIndefinitelyAsNeeded(client.Client, accResp.Response.Response, http.StatusOK)
+		if err != nil {
+			return fmt.Errorf("Error updating Azure Storage Account tags %q: %s", storageAccountName, err)
+		}
+
+		d.SetPartial("tags")
+	}
+
+	d.Partial(false)
 	return nil
 }
 
