@@ -16,7 +16,7 @@ func resourceArmStorageAccount() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceArmStorageAccountCreate,
 		Read:   resourceArmStorageAccountRead,
-		//Update: resourceArmStorageAccountUpdate,
+		Update: resourceArmStorageAccountUpdate,
 		Delete: resourceArmStorageAccountDelete,
 
 		Schema: map[string]*schema.Schema{
@@ -43,14 +43,12 @@ func resourceArmStorageAccount() *schema.Resource {
 			"account_type": &schema.Schema{
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
 				ValidateFunc: validateArmStorageAccountType,
 			},
 
 			"custom_domain": &schema.Schema{
 				Type:     schema.TypeSet,
 				Optional: true,
-				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": &schema.Schema{
@@ -124,6 +122,8 @@ func resourceArmStorageAccount() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -135,12 +135,14 @@ func resourceArmStorageAccountCreate(d *schema.ResourceData, meta interface{}) e
 	storageAccountName := d.Get("name").(string)
 	accountType := d.Get("account_type").(string)
 	location := d.Get("location").(string)
+	tags := d.Get("tags").(map[string]interface{})
 
 	opts := storage.AccountCreateParameters{
 		Location: &location,
 		Properties: &storage.AccountPropertiesCreateParameters{
 			AccountType: storage.AccountType(accountType),
 		},
+		Tags: expandTags(tags),
 	}
 
 	accResp, err := client.Create(resourceGroupName, storageAccountName, opts)
@@ -215,6 +217,8 @@ func resourceArmStorageAccountRead(d *schema.ResourceData, meta interface{}) err
 		}
 		d.Set("custom_domain", customDomain)
 	}
+
+	flattenAndSetTags(d, resp.Tags)
 
 	return nil
 }
