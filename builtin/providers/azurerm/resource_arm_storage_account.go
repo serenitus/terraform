@@ -304,9 +304,21 @@ func resourceArmStorageAccountRead(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if resp.Properties.SecondaryLocation != nil {
-		d.Set("secondary_blob_endpoint", resp.Properties.SecondaryEndpoints.Blob)
-		d.Set("secondary_queue_endpoint", resp.Properties.SecondaryEndpoints.Queue)
-		d.Set("secondary_table_endpoint", resp.Properties.SecondaryEndpoints.Table)
+		if resp.Properties.SecondaryEndpoints.Blob != nil {
+			d.Set("secondary_blob_endpoint", resp.Properties.SecondaryEndpoints.Blob)
+		} else {
+			d.Set("secondary_blob_endpoint", "")
+		}
+		if resp.Properties.SecondaryEndpoints.Queue != nil {
+			d.Set("secondary_queue_endpoint", resp.Properties.SecondaryEndpoints.Queue)
+		} else {
+			d.Set("secondary_queue_endpoint", "")
+		}
+		if resp.Properties.SecondaryEndpoints.Table != nil {
+			d.Set("secondary_table_endpoint", resp.Properties.SecondaryEndpoints.Table)
+		} else {
+			d.Set("secondary_table_endpoint", "")
+		}
 	}
 
 	if resp.Properties.CustomDomain != nil {
