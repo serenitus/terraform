@@ -284,8 +284,18 @@ func resourceAwsSecurityGroupRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("name", sg.GroupName)
 	d.Set("vpc_id", sg.VpcId)
 	d.Set("owner_id", sg.OwnerId)
-	d.Set("ingress", ingressRules)
-	d.Set("egress", egressRules)
+	if err := d.Set("ingress", ingressRules); err != nil {
+		log.Printf("[WARN] Error setting Ingress rule set for (%s): %s", d.Id(), err)
+	} else {
+		log.Printf("\n@@@\nNO ERROR YAY!\n@@@\n")
+	}
+
+	if err := d.Set("egress", egressRules); err != nil {
+		log.Printf("[WARN] Error setting Egress rule set for (%s): %s", d.Id(), err)
+	} else {
+		log.Printf("\n@@@\nNO ERROR YAY!\n@@@\n")
+	}
+
 	d.Set("tags", tagsToMap(sg.Tags))
 	return nil
 }
@@ -449,13 +459,23 @@ func resourceAwsSecurityGroupIPPermGather(d *schema.ResourceData, permissions []
 			list := raw.([]string)
 
 			list = append(list, groups...)
-			m["security_groups"] = list
+
+			// Convert to a slice of interfaces, for proper setting/hashing in the
+			// Ingress/Egress schema set
+			var o []interface{}
+			for _, l := range list {
+				o = append(o, l)
+			}
+			m["security_groups"] = schema.NewSet(func(v interface{}) int {
+				return hashcode.String(v.(string))
+			}, o)
 		}
 	}
 	rules := make([]map[string]interface{}, 0, len(ruleMap))
 	for _, m := range ruleMap {
 		rules = append(rules, m)
 	}
+
 	return rules
 }
 
