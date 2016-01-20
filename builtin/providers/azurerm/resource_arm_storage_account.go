@@ -344,9 +344,13 @@ func resourceArmStorageAccountDelete(d *schema.ResourceData, meta interface{}) e
 	name := id.Path["storageAccounts"]
 	resGroup := id.ResourceGroup
 
-	_, err = client.Delete(resGroup, name)
+	accResp, err := client.Delete(resGroup, name)
 	if err != nil {
 		return fmt.Errorf("Error issuing AzureRM delete request for storage account %q: %s", name, err)
+	}
+	_, err = pollIndefinitelyAsNeeded(client.Client, accResp.Response, http.StatusNotFound)
+	if err != nil {
+		return fmt.Errorf("Error polling for AzureRM delete request for storage account %q: %s", name, err)
 	}
 
 	return nil
