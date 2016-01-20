@@ -466,9 +466,7 @@ func resourceAwsSecurityGroupIPPermGather(d *schema.ResourceData, permissions []
 			for _, l := range list {
 				o = append(o, l)
 			}
-			m["security_groups"] = schema.NewSet(func(v interface{}) int {
-				return hashcode.String(v.(string))
-			}, o)
+			m["security_groups"] = schema.NewSet(schema.HashString, o)
 		}
 	}
 	rules := make([]map[string]interface{}, 0, len(ruleMap))
